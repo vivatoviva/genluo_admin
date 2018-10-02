@@ -72,6 +72,28 @@ let routes = [
     ],
     "routes": [
       {
+        "name": "article",
+        "icon": "profile",
+        "path": "/article",
+        "routes": [
+          {
+            "path": "/article/list",
+            "name": "list",
+            "component": dynamic({ loader: () => import('../Article/Articles'), loading: require('D:/github/GenluoAdmin/src/components/PageLoading/index').default  }),
+            "exact": true
+          },
+          {
+            "path": "/article/operate",
+            "name": "operate",
+            "component": dynamic({ loader: () => import('../Article/Operate'), loading: require('D:/github/GenluoAdmin/src/components/PageLoading/index').default  }),
+            "exact": true
+          },
+          {
+            "component": () => React.createElement(require('D:/github/GenluoAdmin/node_modules/umi-build-dev/lib/plugins/404/NotFound.js').default, { pagesPath: 'src/pages', hasRoutesInConfig: true })
+          }
+        ]
+      },
+      {
         "path": "/dashboard",
         "name": "dashboard",
         "icon": "dashboard",

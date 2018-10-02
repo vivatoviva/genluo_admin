@@ -2093,6 +2093,72 @@ i.antd-pro-components-global-header-index-trigger {
 
 
 
+.antd-pro-pages-article-articles-listContent {
+  .antd-pro-pages-article-articles-description {
+    line-height: 22px;
+    max-width: 720px;
+  }
+  .antd-pro-pages-article-articles-extra {
+    color: @text-color-secondary;
+    margin-top: 16px;
+    line-height: 22px;
+    .ant-avatar {
+      vertical-align: top;
+      margin-right: 8px;
+      width: 20px;
+      height: 20px;
+      position: relative;
+      top: 1px;
+    }
+    & > em {
+      color: @disabled-color;
+      font-style: normal;
+      margin-left: 16px;
+    }
+  }
+}
+a.antd-pro-pages-article-articles-listItemMetaTitle {
+  color: @heading-color;
+}
+.antd-pro-pages-article-articles-listItemExtra {
+  width: 272px;
+  height: 1px;
+}
+.antd-pro-pages-article-articles-selfTrigger {
+  margin-left: 12px;
+}
+
+@media screen and (max-width: @screen-xs) {
+  .antd-pro-pages-article-articles-selfTrigger {
+    display: block;
+    margin-left: 0;
+  }
+  .antd-pro-pages-article-articles-listContent {
+    .antd-pro-pages-article-articles-extra {
+      & > em {
+        display: block;
+        margin-left: 0;
+        margin-top: 8px;
+      }
+    }
+  }
+}
+@media screen and (max-width: @screen-md) {
+  .antd-pro-pages-article-articles-selfTrigger {
+    display: block;
+    margin-left: 0;
+  }
+}
+@media screen and (max-width: @screen-lg) {
+  .antd-pro-pages-article-articles-listItemExtra {
+    width: 0;
+    height: 1px;
+  }
+}
+
+
+
+
 .antd-pro-pages-dashboard-analysis-iconGroup {
   i {
     transition: color 0.32s;
