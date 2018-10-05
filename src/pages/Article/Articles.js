@@ -1,7 +1,24 @@
 import React, { Component, Fragment } from 'react';
 import moment from 'moment';
 import { connect } from 'dva';
-import { Form, Card, Select, List , Input, Tag, Divider, Badge, Icon, Avatar, Row, Col, Button } from 'antd';
+import { Link } from 'dva/router'
+
+import {
+  Form,
+  Card,
+  Select,
+  List,
+  Input,
+  Tag,
+  Divider,
+  Badge,
+  Icon,
+  Avatar,
+  Row,
+  Col,
+  Button,
+  DatePicker,
+} from 'antd';
 
 import TagSelect from '@/components/TagSelect';
 import StandardFormRow from '@/components/StandardFormRow';
@@ -10,28 +27,45 @@ import StandardTable from '@/components/StandardTable';
 
 const { Option } = Select;
 const FormItem = Form.Item;
+const { RangePicker } = DatePicker;
 
-const pageSize = 5;
+const statusMap = {
+  'delete': 'error',
+  'online': 'success'
+}
+const status = {
+  'delete':'删除',
+  'online': '在线'
+};
 
-const statusMap = ['default', 'processing', 'success', 'error'];
-const status = ['关闭', '运行中', '已上线', '异常'];
-
-@connect(({ list, loading, rules }) => ({
+@connect(({ list, loading, article,  rules }) => ({
   list,
   rules,
-  loading: loading.models.list,
+  article,
+  loading: loading.models.article,
 }))
 @Form.create({
   onValuesChange({ dispatch }, changedValues, allValues) {
-    // 表单项变化时请求数据
-    // eslint-disable-next-line
-    console.log(changedValues, allValues);
-    // 模拟查询表单生效
+    let paramsData = allValues;
+    if(paramsData.tagId && paramsData.tagId.length > 0) {
+      paramsData.tagId = paramsData.tagId.map(item => parseInt(item.split('@')[0]), 10)
+    } else {
+      paramsData.tagId = undefined;
+    }
+    if(paramsData.categroyId && paramsData.categroyId.length>0) {
+    } else {
+      paramsData.categroyId = undefined;
+    }
+    if(paramsData.date && paramsData.date.length > 0) {
+      paramsData.date = paramsData.date.map(item =>
+          item.format('YYYY-MM-DD HH:MM:SS')
+        );
+    } else {
+      paramsData.date = undefined;
+    }
     dispatch({
-      type: 'list/fetch',
-      payload: {
-        count: 5,
-      },
+      type: 'article/fetchList',
+      payload: paramsData,
     });
   },
 })
@@ -40,14 +74,14 @@ class SearchList extends Component {
   componentDidMount() {
     const { dispatch } = this.props;
     dispatch({
-      type: 'list/fetch',
-      payload: {
-        count: 5,
-      },
-    });
+      type: 'article/fetchList'
+    })
     dispatch({
-      type: 'rules/fetch',
-    });
+      type: 'article/fetchTags'
+    })
+    dispatch({
+      type: 'article/fetchCategroy'
+    })
   }
   state = {
     modalVisible: false,
@@ -65,8 +99,10 @@ class SearchList extends Component {
   };
   
   handleStandardTableChange = (pagination, filtersArg, sorter) => {
-    const { dispatch } = this.props;
+    const { dispatch, article: { queryParam } } = this.props;
     const { formValues } = this.state;
+
+    console.log(sorter);
 
     const filters = Object.keys(filtersArg).reduce((obj, key) => {
       const newObj = { ...obj };
@@ -74,179 +110,124 @@ class SearchList extends Component {
       return newObj;
     }, {});
 
+    console.log(sorter.field);
     const params = {
-      currentPage: pagination.current,
+      ...queryParam,
+      current: pagination.current,
       pageSize: pagination.pageSize,
       ...formValues,
       ...filters,
     };
     if (sorter.field) {
-      params.sorter = `${sorter.field}_${sorter.order}`;
-    }
+      let order = '';
+      if(sorter.order.includes('asc')) {
+        order='asc'
+      } else {
+        order = 'desc'
+      }
 
+      params.sort = {
+        columnKey: sorter.columnKey,
+        order,
+      };
+    }
     dispatch({
-      type: 'rule/fetch',
+      type: 'article/fetchList',
       payload: params,
     });
   };
 
+  handleAddClick = () => {
+    this.props.history.push('/article/operate')
+  }
+
+  handleDeleteClick = () => {
+    const { selectedRows, } = this.state;
+    const { dispatch, article: { queryParam } } = this.props;
+    const deleteId = selectedRows.map(item => item.article_id);
+    dispatch({
+      type: 'article/deleteArticle',
+      payload: {
+        deleteId,
+        queryParam,
+      },
+    }).then(()=> {
+      this.setState({
+        selectedRows: [],
+      })
+    })
+  }
+
   columns = [
     {
       title: '标题',
-      dataIndex: 'name',
+      dataIndex: 'title',
     },
     {
       title: '阅读数',
-      dataIndex: 'desc',
+      dataIndex: 'read_num',
+      sorter: true,
+      align: 'center',
     },
     {
       title: '分类',
-      dataIndex: 'callNo',
-      sorter: true,
-      align: 'right',
-      render: val => `${val} 万`,
+      dataIndex: 'categroy_name',
+      align: 'center',
+      render: val => `${val} `,
       // mark to display a total number
       needTotal: true,
     },
     {
       title: 'tags',
       dataIndex: 'status',
-      filters: [
-        {
-          text: status[0],
-          value: 0,
-        },
-        {
-          text: status[1],
-          value: 1,
-        },
-        {
-          text: status[2],
-          value: 2,
-        },
-        {
-          text: status[3],
-          value: 3,
-        },
-      ],
       render(val) {
-        return <Badge status={statusMap[val]} text={status[val]} />;
+        return '前端、后台、服务器';
       },
     },
     {
       title: '状态',
-      dataIndex: 'status',
-      filters: [
-        {
-          text: status[0],
-          value: 0,
-        },
-        {
-          text: status[1],
-          value: 1,
-        },
-        {
-          text: status[2],
-          value: 2,
-        },
-        {
-          text: status[3],
-          value: 3,
-        },
-      ],
+      dataIndex: 'STATUS',
       render(val) {
-        return <Badge status={statusMap[val]} text={status[val]} />;
+        return <Badge status={statusMap[val] || 'success'} text={status[val] || '在线'} />;
       },
     },
     {
       title: '发表时间',
-      dataIndex: 'updatedAt',
+      dataIndex: 'create_time',
       sorter: true,
-      render: val => <span>{moment(val).format('YYYY-MM-DD HH:mm:ss')}</span>,
+      render: val => <span>{moment(val).format('YYYY-MM-DD HH:mm')}</span>,
     },
     {
       title: '更新时间',
-      dataIndex: 'updatedAt',
+      dataIndex: 'update_time',
       sorter: true,
-      render: val => <span>{moment(val).format('YYYY-MM-DD HH:mm:ss')}</span>,
+      render: val => <span>{moment(val).format('YYYY-MM-DD HH:mm')}</span>,
     },
     {
       title: '操作',
-      render: (text, record) => (
+      dataIndex: 'article_id',
+      render: (value) => (
         <Fragment>
-          <a href="">编辑</a>
+          <Link to={`/article/operate/${value}`}>编辑</Link>
         </Fragment>
       ),
     },
   ];
 
-  setOwner = () => {
-    const { form } = this.props;
-    form.setFieldsValue({
-      owner: ['wzj'],
-    });
-  };
-
-  fetchMore = () => {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'list/appendFetch',
-      payload: {
-        count: pageSize,
-      },
-    });
-  };
-
   render() {
     const {
       form,
-      list: { list },
-      rules: { data },
+      article: { tags, categroy, data },
       loading,
     } = this.props;
+    const tableList = data.list.map(item => ({ ...item, disabled: item.STATUS === 'delete'}))
+    const tableData = {
+      list: tableList,
+      pagination: data.pagination,
+    }
+
     const { getFieldDecorator } = form;
     const { selectedRows } = this.state;
-    const owners = [
-      {
-        id: 'wzj',
-        name: '我自己',
-      },
-      {
-        id: 'wjh',
-        name: '吴家豪',
-      },
-      {
-        id: 'zxx',
-        name: '周星星',
-      },
-      {
-        id: 'zly',
-        name: '赵丽颖',
-      },
-      {
-        id: 'ym',
-        name: '姚明',
-      },
-    ];
-
-    const IconText = ({ type, text }) => (
-      <span>
-        <Icon type={type} style={{ marginRight: 8 }} />
-        {text}
-      </span>
-    );
-
-    const ListContent = ({ data: { content, updatedAt, avatar, owner, href } }) => (
-      <div className={styles.listContent}>
-        <div className={styles.description}>{content}</div>
-        <div className={styles.extra}>
-          <Avatar src={avatar} size="small" />
-          <a href={href}>{owner}</a> 发布在
-          <a href={href}>{href}</a>
-          <em>{moment(updatedAt).format('YYYY-MM-DD HH:mm')}</em>
-        </div>
-      </div>
-    );
 
     const formItemLayout = {
       wrapperCol: {
@@ -256,20 +237,6 @@ class SearchList extends Component {
       },
     };
 
-    const loadMore =
-      list.length > 0 ? (
-        <div style={{ textAlign: 'center', marginTop: 16 }}>
-          <Button onClick={this.fetchMore} style={{ paddingLeft: 48, paddingRight: 48 }}>
-            {loading ? (
-              <span>
-                <Icon type="loading" /> 加载中...
-              </span>
-            ) : (
-              '加载更多'
-            )}
-          </Button>
-        </div>
-      ) : null;
 
     return (
       <Fragment>
@@ -277,20 +244,12 @@ class SearchList extends Component {
           <Form layout="inline">
             <StandardFormRow title="类别" block style={{ paddingBottom: 11 }}>
               <FormItem>
-                {getFieldDecorator('category')(
+                {getFieldDecorator('categroyId')(
+                  
                   <TagSelect expandable>
-                    <TagSelect.Option value="cat1">类目一</TagSelect.Option>
-                    <TagSelect.Option value="cat2">类目二</TagSelect.Option>
-                    <TagSelect.Option value="cat3">类目三</TagSelect.Option>
-                    <TagSelect.Option value="cat4">类目四</TagSelect.Option>
-                    <TagSelect.Option value="cat5">类目五</TagSelect.Option>
-                    <TagSelect.Option value="cat6">类目六</TagSelect.Option>
-                    <TagSelect.Option value="cat7">类目七</TagSelect.Option>
-                    <TagSelect.Option value="cat8">类目八</TagSelect.Option>
-                    <TagSelect.Option value="cat9">类目九</TagSelect.Option>
-                    <TagSelect.Option value="cat10">类目十</TagSelect.Option>
-                    <TagSelect.Option value="cat11">类目十一</TagSelect.Option>
-                    <TagSelect.Option value="cat12">类目十二</TagSelect.Option>
+                    {
+                      categroy.map(item => <TagSelect.Option value={item.id}>{item.name}</TagSelect.Option>)
+                    }
                   </TagSelect>
                 )}
               </FormItem>
@@ -299,24 +258,19 @@ class SearchList extends Component {
               <Row>
                 <Col lg={16} md={24} sm={24} xs={24}>
                   <FormItem>
-                    {getFieldDecorator('owner', {
-                      initialValue: ['wjh', 'zxx'],
-                    })(
+                    {getFieldDecorator('tagId')(
                       <Select
                         mode="multiple"
                         style={{ minWidth: '300px' ,width: '100%' }}
-                        placeholder="选择 owner"
+                        placeholder="选择文章标签"
                       >
-                        {owners.map(owner => (
-                          <Option key={owner.id} value={owner.id}>
-                            {owner.name}
+                        {tags.map(item => (
+                          <Option key={item.id} value={item.id+'@'+item.name}>
+                            {item.name}
                           </Option>
                         ))}
                       </Select>
                     )}
-                    <a className={styles.selfTrigger} onClick={this.setOwner}>
-                      全部
-                    </a>
                   </FormItem>
                 </Col>
               </Row>
@@ -325,12 +279,12 @@ class SearchList extends Component {
               <Row gutter={16}>
                 <Col xl={8} lg={10} md={12} sm={24} xs={24}>
                   <FormItem {...formItemLayout} label="文章状态">
-                    {getFieldDecorator('user', {})(
+                    {getFieldDecorator('status', {})(
                       <Select
-                        placeholder="不限"
                         style={{ maxWidth: 200, width: '100%' }}
                       >
                         <Option value="online">在线</Option>
+                        
                         <Option value="delete">删除</Option>
                       </Select>
                     )}
@@ -338,13 +292,9 @@ class SearchList extends Component {
                 </Col>
                 <Col xl={8} lg={10} md={12} sm={24} xs={24}>
                   <FormItem {...formItemLayout} label="发表时间">
-                    {getFieldDecorator('rate', {})(
-                      <Input
-                        placeholder="请选择发表时间"
-                        style={{ maxWidth: 200, width: '100%' }}
-                      >
-                      </Input>
-                    )}
+                  {getFieldDecorator('date')(
+                    <RangePicker style={{ width: '100%' }} placeholder={['开始日期', '结束日期']} />
+                  )}
                   </FormItem>
                 </Col>
               </Row>
@@ -362,14 +312,18 @@ class SearchList extends Component {
             <Button
               type="primary"
               style={{marginRight: '20px'}}
+              onClick={this.handleAddClick}
               ><Icon type="plus" theme="outlined" /> 新建</Button>
-            <Button type="danger"><Icon type="delete" theme="outlined" /> 删除</Button>
+            {
+              !!selectedRows.length &&
+              <Button onClick={this.handleDeleteClick} type="danger"><Icon type="delete" theme="outlined" /> 删除</Button>
+            }
           </div>
          
           <StandardTable
             selectedRows={selectedRows}
             loading={loading}
-            data={data}
+            data={tableData}
             columns={this.columns}
             onSelectRow={this.handleSelectRows}
             onChange={this.handleStandardTableChange}

@@ -104,10 +104,16 @@ export async function updateFakeList(params) {
 }
 
 export async function fakeAccountLogin(params) {
-  return request('/api/login/account', {
+  return request('/api/admin/user/login', {
     method: 'POST',
     body: params,
   });
+}
+
+export async function accountLogin() {
+  return request('/api/admin/user/logout', {
+    method: 'POST',
+  })
 }
 
 export async function fakeRegister(params) {

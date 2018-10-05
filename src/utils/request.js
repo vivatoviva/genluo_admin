@@ -22,6 +22,25 @@ const codeMessage = {
   504: '网关超时。',
 };
 
+function checkCode(response) {
+  const { dispatch } = store;
+  switch(response.code) {
+    case 200001: {
+      dispatch({type: 'login/logout'})
+      return false; // 未登录
+    }
+    case 20002: {
+      notification.error({
+        message: `服务器错误`,
+      });
+       dispatch(routerRedux.push('/exception/500'))
+       return false;
+    } // 服务器错误
+    default : return response;
+  }
+}
+
+
 const checkStatus = response => {
   if (response.status >= 200 && response.status < 300) {
     return response;
@@ -130,6 +149,7 @@ export default function request(
       }
       return response.json();
     })
+    // .then(checkCode)
     .catch(e => {
       const status = e.name;
       if (status === 401) {
