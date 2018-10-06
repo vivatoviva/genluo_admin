@@ -23,18 +23,24 @@ const codeMessage = {
 };
 
 function checkCode(response) {
-  const { dispatch } = store;
   switch(response.code) {
-    case 200001: {
-      dispatch({type: 'login/logout'})
-      return false; // 未登录
+    case 20005: {
+      // notification.error({
+      //   message: `用户未登录`,
+      // });
+      const error = new Error(codeMessage[401]);
+      error.name = 401;
+      error.response = response;
+      throw error;
     }
     case 20002: {
       notification.error({
         message: `服务器错误`,
       });
-       dispatch(routerRedux.push('/exception/500'))
-       return false;
+       const error = new Error(codeMessage[500]);
+       error.name = 500;
+       error.response = response;
+       throw error;
     } // 服务器错误
     default : return response;
   }
@@ -140,7 +146,7 @@ export default function request(
   }
   return fetch(url, newOptions)
     .then(checkStatus)
-    .then(response => cachedSave(response, hashcode))
+    // .then(response => cachedSave(response, hashcode))
     .then(response => {
       // DELETE and 204 do not return data by default
       // using .json will report an error.
@@ -149,8 +155,9 @@ export default function request(
       }
       return response.json();
     })
-    // .then(checkCode)
+    .then(checkCode)
     .catch(e => {
+      debugger;
       const status = e.name;
       if (status === 401) {
         // @HACK
