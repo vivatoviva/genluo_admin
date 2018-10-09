@@ -104,14 +104,14 @@ export async function updateFakeList(params) {
 }
 
 export async function fakeAccountLogin(params) {
-  return request('/api/admin/user/login', {
+  return request('/api/user/login', {
     method: 'POST',
     body: params,
   });
 }
 
 export async function accountLogin() {
-  return request('/api/admin/user/logout', {
+  return request('/api/user/logout', {
     method: 'POST',
   })
 }

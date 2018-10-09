@@ -7,7 +7,7 @@ import defaultSettings from '../src/defaultSettings';
 export default {
   // add for transfer to umi
   "proxy": {
-    "/api/admin": {
+    "/api": {
       "target": "http://127.0.0.1:3000",
       "changeOrigin": true,
     }
